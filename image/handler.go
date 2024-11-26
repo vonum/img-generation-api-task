@@ -26,6 +26,11 @@ type Sizer interface {
 }
 
 func (h *ImageHandler) Rescale(w http.ResponseWriter, r *http.Request) {
+  if r.Method != http.MethodPost {
+    http.Error(w, "Method not allowed.", http.StatusMethodNotAllowed)
+    return
+  }
+
   imgBytes, err := ReadBytes(w, r, h.MaxFileSize)
   if err != nil {
     if maxSizeErr, ok := err.(*ImageMaxSizeExceededError); ok {
