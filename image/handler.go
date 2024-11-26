@@ -13,7 +13,7 @@ const JPEGMimeType = "image/jpeg"
 const MaxIdleTimeMS = 100
 
 type ImageHandler struct {
-  maxFileSize int64
+  MaxFileSize int64
   c chan <- Job
 }
 
@@ -26,16 +26,22 @@ type Sizer interface {
 }
 
 func (h *ImageHandler) Rescale(w http.ResponseWriter, r *http.Request) {
-  imgBytes, err := ReadBytes(w, r, h.maxFileSize)
+  imgBytes, err := ReadBytes(w, r, h.MaxFileSize)
   if err != nil {
     if maxSizeErr, ok := err.(*ImageMaxSizeExceededError); ok {
       w.WriteHeader(http.StatusRequestEntityTooLarge)
-      w.Write([]byte(maxSizeErr.Error()))
+      _ = json.NewEncoder(w).Encode(Response{
+        Error: maxSizeErr.Error(),
+        ImageID: "",
+      })
     }
 
     if mimeTypeErr, ok := err.(*ImageMimeTypeError); ok {
       w.WriteHeader(http.StatusBadRequest)
-      w.Write([]byte(mimeTypeErr.Error()))
+      _ = json.NewEncoder(w).Encode(Response{
+        Error: mimeTypeErr.Error(),
+        ImageID: "",
+      })
     }
 
     return
@@ -53,6 +59,9 @@ func (h *ImageHandler) Rescale(w http.ResponseWriter, r *http.Request) {
   case <- time.After(MaxIdleTimeMS * time.Millisecond):
     timeoutErr := RequestTimeoutError{MaxIdleTimeMS}
     w.WriteHeader(http.StatusTooManyRequests)
-    w.Write([]byte(timeoutErr.Error()))
+    _ = json.NewEncoder(w).Encode(Response{
+      Error: timeoutErr.Error(),
+      ImageID: "",
+    })
   }
 }

@@ -1,33 +1,20 @@
-package image
+package image_test
 
 import (
 	"bytes"
-	"mime/multipart"
 	"net/http"
-  "net/textproto"
 	"net/http/httptest"
 	"os"
 	"testing"
+
+	"github.com/tutti-ch/backend-coding-task-template/image"
 )
-
-func createMultiPart(mimeType string, data []byte, buf *bytes.Buffer) *multipart.Writer {
-  multipartWriter := multipart.NewWriter(buf)
-
-  h := make(textproto.MIMEHeader)
-  h.Set("Content-Disposition", `form-data; name="image"; filename="image.jpeg"`)
-  h.Set("Content-Type", mimeType)
-  part, _ := multipartWriter.CreatePart(h)
-  part.Write(data)
-  multipartWriter.Close()
-
-  return multipartWriter
-}
 
 func TestReadBytesAboveThreshold(t *testing.T) {
   imgBytes, _ := os.ReadFile("../testdata/testimage_big.jpg")
 
   var buf bytes.Buffer
-  multipartWriter := createMultiPart(
+  multipartWriter := CreateMultiPart(
     "image/jpeg",
     imgBytes,
     &buf,
@@ -37,7 +24,7 @@ func TestReadBytesAboveThreshold(t *testing.T) {
   w := httptest.NewRecorder()
   r.Header.Set("Content-Type", multipartWriter.FormDataContentType())
 
-  _, err := ReadBytes(w, r, MaxImageSize)
+  _, err := image.ReadBytes(w, r, image.MaxImageSize)
 
   errMsg := "Image size exceeded - 8192 kB."
   if err == nil {
@@ -53,7 +40,7 @@ func TestReadBytesWrongMimeType(t *testing.T) {
   textBytes, _ := os.ReadFile("../testdata/text.txt")
 
   var buf bytes.Buffer
-  multipartWriter := createMultiPart(
+  multipartWriter := CreateMultiPart(
     "plain/text",
     textBytes,
     &buf,
@@ -63,7 +50,7 @@ func TestReadBytesWrongMimeType(t *testing.T) {
   w := httptest.NewRecorder()
   r.Header.Set("Content-Type", multipartWriter.FormDataContentType())
 
-  _, err := ReadBytes(w, r, MaxImageSize)
+  _, err := image.ReadBytes(w, r, image.MaxImageSize)
 
   errMsg := "Unsupported mime type - Only .jpeg is allowed."
   if err == nil {
@@ -79,7 +66,7 @@ func TestReadBytesOk(t *testing.T) {
   imgBytes, _ := os.ReadFile("../testdata/testimage_smalljpg")
 
   var buf bytes.Buffer
-  multipartWriter := createMultiPart(
+  multipartWriter := CreateMultiPart(
     "image/jpeg",
     imgBytes,
     &buf,
@@ -89,7 +76,7 @@ func TestReadBytesOk(t *testing.T) {
   w := httptest.NewRecorder()
   r.Header.Set("Content-Type", multipartWriter.FormDataContentType())
 
-  resultBytes, err := ReadBytes(w, r, MaxImageSize)
+  resultBytes, err := image.ReadBytes(w, r, image.MaxImageSize)
 
   if err != nil {
     t.Error("Expected to read bytes successfully")

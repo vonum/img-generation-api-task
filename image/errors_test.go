@@ -1,9 +1,13 @@
-package image
+package image_test
 
-import "testing"
+import (
+	"testing"
+
+	"github.com/tutti-ch/backend-coding-task-template/image"
+)
 
 func TestImageMaxSizeExceededError(t *testing.T) {
-  err := ImageMaxSizeExceededError{8192 * 1024}
+  err := image.ImageMaxSizeExceededError{8192 * 1024}
   errMsg := "Image size exceeded - 8192 kB."
   if err.Error() != errMsg {
     t.Errorf("Expected %s but got %s", errMsg, err.Error())
@@ -11,7 +15,7 @@ func TestImageMaxSizeExceededError(t *testing.T) {
 }
 
 func TestMimeTypeError(t *testing.T) {
-  err := ImageMimeTypeError{}
+  err := image.ImageMimeTypeError{}
   errMsg := "Unsupported mime type - Only .jpeg is allowed."
   if err.Error() != errMsg {
     t.Errorf("Expected %s but got %s", errMsg, err.Error())
@@ -19,8 +23,8 @@ func TestMimeTypeError(t *testing.T) {
 }
 
 func TestRequestTimeoutError(t *testing.T) {
-  err := RequestTimeoutError{100}
-  errMsg := "No workers available - max idle time 100ms"
+  err := image.RequestTimeoutError{100}
+  errMsg := "No workers available - max idle time 100ms."
   if err.Error() != errMsg {
     t.Errorf("Expected %s but got %s", errMsg, err.Error())
   }

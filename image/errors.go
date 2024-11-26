@@ -20,5 +20,5 @@ func (e *ImageMimeTypeError) Error() string {
 }
 
 func (e *RequestTimeoutError) Error() string {
-  return fmt.Sprintf("No workers available - max idle time %dms", e.MaxIdleTimeMS)
+  return fmt.Sprintf("No workers available - max idle time %dms.", e.MaxIdleTimeMS)
 }
