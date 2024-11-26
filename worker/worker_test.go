@@ -1,4 +1,4 @@
-package worker
+package worker_test
 
 import (
 	"bytes"
@@ -10,12 +10,13 @@ import (
 	"time"
 
 	"github.com/tutti-ch/backend-coding-task-template/image"
+	"github.com/tutti-ch/backend-coding-task-template/worker"
 )
 
 func TestInitWorkers(t *testing.T) {
   nStart := runtime.NumGoroutine()
 
-  InitWorkers(3, "", make(<-chan image.Job))
+  worker.InitWorkers(3, "", make(<-chan image.Job))
 
   n := runtime.NumGoroutine()
 
@@ -32,7 +33,7 @@ func TestSuccessfulJob(t *testing.T) {
   c := make(chan image.Job)
   defer close(c)
 
-  w := Worker{Id: 1, basePath: "/tmp/smgtest/", c: c}
+  w := worker.NewWorker(1, "/tmp/smgtest/", c)
   go w.Run()
 
   imgBytes, _ := os.ReadFile("../testdata/testimage_small.jpg")
@@ -70,7 +71,7 @@ func TestFailedJobRescaling(t *testing.T) {
   c := make(chan image.Job)
   defer close(c)
 
-  w := Worker{Id: 1, basePath: "/tmp/smgtest/", c: c}
+  w := worker.NewWorker(1, "/tmp/smgtest/", c)
   go w.Run()
 
   imgBytes := []byte{}
@@ -100,7 +101,7 @@ func TestFailedJobMissingDir(t *testing.T) {
   c := make(chan image.Job)
   defer close(c)
 
-  w := Worker{Id: 1, basePath: "/tmp/notsmgtest/", c: c}
+  w := worker.NewWorker(1, "/tmp/smgtestmissing/", c)
   go w.Run()
 
   imgBytes, _ := os.ReadFile("../testdata/testimage_small.jpg")

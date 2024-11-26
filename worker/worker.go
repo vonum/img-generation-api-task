@@ -11,15 +11,19 @@ import (
 )
 
 type Worker struct {
-  Id int
+  id int
   basePath string
   c <- chan image.Job
+}
+
+func NewWorker(id int, basePath string, c <- chan image.Job) *Worker {
+  return &Worker{id, basePath, c}
 }
 
 func InitWorkers(n int, basePath string, c <- chan image.Job) {
   for i := 0; i < n; i++ {
     fmt.Println("Starting worker: ", i + 1)
-    worker := Worker{Id: i + 1, basePath: basePath, c: c}
+    worker := NewWorker(i + 1, basePath, c)
     go worker.Run()
   }
 }
@@ -52,7 +56,7 @@ func (w *Worker) Run() {
 func (w *Worker) LogJobStarted(jobId string, nBytes int) {
   slog.Info(
     "Job Started",
-    "id", w.Id,
+    "id", w.id,
     "image", jobId,
     "n_bytes", nBytes,
   )
@@ -67,7 +71,7 @@ func (w *Worker) LogJobFinished(
 ) {
   slog.Info(
     "Job Finished",
-    "id", w.Id,
+    "id", w.id,
     "image", jobId,
     "n_bytes", nBytes,
     "output_n_bytes", nOutputBytes,
@@ -79,7 +83,7 @@ func (w *Worker) LogJobFinished(
 func (w *Worker) LogJobFailed(job image.Job, err error) {
   slog.Error(
     "Job Failed",
-    "id", w.Id,
+    "id", w.id,
     "image", job.Id,
     "reason", err,
   )
