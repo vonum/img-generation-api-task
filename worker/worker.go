@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"log/slog"
 	"os"
+	"path/filepath"
 	"time"
 
 	"github.com/tutti-ch/backend-coding-task-template/image"
@@ -41,7 +42,7 @@ func (w *Worker) Run() {
       continue
     }
 
-    filename := fmt.Sprintf("%s%s.jpeg", w.basePath, job.Id)
+    filename := filepath.Join(w.basePath, job.Id + ".jpeg",)
     if err = os.WriteFile(filename, rescaledBytes, 0644); err != nil {
       w.LogJobFailed(job, err)
       continue
