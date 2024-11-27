@@ -1,0 +1,5 @@
+.git/
+.gitignore
+main.go
+main_test.go
+testdata/

@@ -1,0 +1,32 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: api-deployment
+  labels:
+    app: tuti
+    type: backend
+spec:
+  template:
+    metadata:
+      name: api-pod
+      labels:
+        app: tuti
+        type: backend
+    spec:
+      containers:
+      - name: api
+        image: tuti
+        ports:
+          - containerPort: 3000
+        imagePullPolicy: Never
+        env:
+          - name: BASE_PATH
+            valueFrom:
+              configMapKeyRef:
+                name: tuti-config
+                key: BASE_PATH
+  replicas: 3
+  selector:
+    matchLabels:
+      app: tuti
+      type: backend

@@ -1,0 +1,7 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+   name: tuti-config
+   namespace: default
+data:
+   BASE_PATH: "/tmp"
