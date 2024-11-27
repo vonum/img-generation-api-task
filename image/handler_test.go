@@ -52,11 +52,11 @@ func sendRequest(imgPath, mimeType string, c chan image.Job) *http.Response {
 func TestRescaling(t *testing.T) {
   outputPath := "/tmp/smgtest/"
   c := make(chan image.Job)
+  go worker.InitWorkers(1, outputPath, c)
   defer close(c)
 
   t.Run("Successful Rescaling", func(t *testing.T) {
     imgPath := "../testdata/testimage_small.jpg"
-    go worker.InitWorkers(1, outputPath, c)
 
     res := sendRequest(imgPath, "image/jpeg", c)
     defer res.Body.Close()
@@ -76,7 +76,6 @@ func TestRescaling(t *testing.T) {
   t.Run("Image Too Large", func(t *testing.T) {
     imgPath := "../testdata/testimage_big.jpg"
     errMsg := "Image size exceeded - 8192 kB."
-    go worker.InitWorkers(1, outputPath, c)
 
     res := sendRequest(imgPath, "image/jpeg", c)
     defer res.Body.Close()
@@ -96,7 +95,6 @@ func TestRescaling(t *testing.T) {
   t.Run("Wrong Mime Type", func(t *testing.T) {
     imgPath := "../testdata/text.txt"
     errMsg := "Unsupported mime type - Only .jpeg is allowed."
-    go worker.InitWorkers(1, outputPath, c)
 
     res := sendRequest(imgPath, "plain/text", c)
     defer res.Body.Close()

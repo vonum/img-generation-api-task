@@ -13,6 +13,21 @@ import (
 	"github.com/tutti-ch/backend-coding-task-template/worker"
 )
 
+func runWorker(imgBytes []byte, outputPath string, buf bytes.Buffer) string {
+  log.SetOutput(&buf)
+
+  c := make(chan image.Job)
+  defer close(c)
+
+  w := worker.NewWorker(1, outputPath, c)
+  go w.Run()
+
+  c <- image.Job{Id: "testimage", Payload: imgBytes}
+  <- time.After(10 * time.Millisecond)
+
+  return buf.String()
+}
+
 func TestInitWorkers(t *testing.T) {
   nStart := runtime.NumGoroutine()
 
@@ -20,106 +35,85 @@ func TestInitWorkers(t *testing.T) {
 
   n := runtime.NumGoroutine()
 
-
   if nStart + 3 != n {
     t.Error("Expected 3 additional go routines to spawn")
   }
 }
 
-func TestSuccessfulJob(t *testing.T) {
-  var buf bytes.Buffer
-  log.SetOutput(&buf)
+func TestRun(t *testing.T) {
+  outputPath := "/tmp/smgtest/"
+  imgPath := "../testdata/testimage_small.jpg"
+  imgBytes, err := os.ReadFile(imgPath)
 
-  c := make(chan image.Job)
-  defer close(c)
-
-  w := worker.NewWorker(1, "/tmp/smgtest/", c)
-  go w.Run()
-
-  imgBytes, _ := os.ReadFile("../testdata/testimage_small.jpg")
-  id := "testimage"
-
-  c <- image.Job{Id: id, Payload: imgBytes}
-  <- time.After(10 * time.Millisecond)
-
-  resultBytes, err := os.ReadFile("/tmp/smgtest/testimage.jpeg")
-  if err != nil || len(resultBytes) == 0 {
-    t.Error("Expected rescaled image to be generated: ", err)
+  if err != nil {
+    t.Fatal(err)
   }
 
-  logs := buf.String()
+  t.Run("Successful Run", func(t *testing.T) {
+    var buf bytes.Buffer
+    log.SetOutput(&buf)
 
-  if !strings.Contains(logs, "Job Started id=1 image=testimage") {
-    t.Error("Expected Job started log to be present")
-  }
+    logs := runWorker(imgBytes, outputPath, buf)
 
-  if !strings.Contains(logs, "Job Finished id=1 image=testimage") {
-    t.Error("Expected Job finished log to be present")
-  }
+    resultBytes, err := os.ReadFile("/tmp/smgtest/testimage.jpeg")
+    if err != nil || len(resultBytes) == 0 {
+      t.Error("Expected rescaled image to be generated: ", err)
+    }
 
-  if !strings.Contains(logs, "image_path=/tmp/smgtest/testimage.jpeg") {
-    t.Error("Expected output path to be present")
-  }
-}
+    if !strings.Contains(logs, "Job Started id=1 image=testimage") {
+      t.Error("Expected Job started log to be present")
+    }
 
-// There are more potential causes for rescaling to fail
-// This covers only the empty byte slice case
-func TestFailedJobRescaling(t *testing.T) {
-  var buf bytes.Buffer
-  log.SetOutput(&buf)
+    if !strings.Contains(logs, "Job Finished id=1 image=testimage") {
+      t.Error("Expected Job finished log to be present")
+    }
 
-  c := make(chan image.Job)
-  defer close(c)
+    if !strings.Contains(logs, "image_path=/tmp/smgtest/testimage.jpeg") {
+      t.Error("Expected output path to be present")
+    }
+  })
 
-  w := worker.NewWorker(1, "/tmp/smgtest/", c)
-  go w.Run()
+  // There are more potential causes for rescaling to fail
+  // This covers only the empty byte slice case
+  // Rescaling is tested separately
+  t.Run("Failed Rescaling", func(t *testing.T) {
+    var buf bytes.Buffer
+    log.SetOutput(&buf)
 
-  imgBytes := []byte{}
-  id := "testimage"
-  c <- image.Job{Id: id, Payload: imgBytes}
-  <- time.After(10 * time.Millisecond)
+    imgBytes := []byte{}
 
-  logs := buf.String()
+    logs := runWorker(imgBytes, outputPath, buf)
 
-  if !strings.Contains(logs, "Job Started id=1 image=testimage") {
-    t.Error("Expected Job started log to be present")
-  }
+    if !strings.Contains(logs, "Job Started id=1 image=testimage") {
+      t.Error("Expected Job started log to be present")
+    }
 
-  if !strings.Contains(logs, "Job Failed id=1 image=testimage") {
-    t.Error("Expected Job finished log to be present")
-  }
+    if !strings.Contains(logs, "Job Failed id=1 image=testimage") {
+      t.Error("Expected Job finished log to be present")
+    }
 
-  if !strings.Contains(logs, "failed to decode image config") {
-    t.Error("Expected reason to be present")
-  }
-}
+    if !strings.Contains(logs, "failed to decode image config") {
+      t.Error("Expected reason to be present")
+    }
+  })
 
-func TestFailedJobMissingDir(t *testing.T) {
-  var buf bytes.Buffer
-  log.SetOutput(&buf)
+  t.Run("Missing Directory", func(t *testing.T) {
+    var buf bytes.Buffer
+    log.SetOutput(&buf)
 
-  c := make(chan image.Job)
-  defer close(c)
+    logs := runWorker(imgBytes, "/tmp/smgtestmissing/", buf)
 
-  w := worker.NewWorker(1, "/tmp/smgtestmissing/", c)
-  go w.Run()
+    if !strings.Contains(logs, "Job Started id=1 image=testimage") {
+      t.Error("Expected Job started log to be present")
+    }
 
-  imgBytes, _ := os.ReadFile("../testdata/testimage_small.jpg")
-  id := "testimage"
-  c <- image.Job{Id: id, Payload: imgBytes}
-  <- time.After(10 * time.Millisecond)
+    if !strings.Contains(logs, "Job Failed id=1 image=testimage") {
+      t.Error("Expected Job Failed log to be present")
+    }
 
-  logs := buf.String()
+    if !strings.Contains(logs, "no such file or directory") {
+      t.Error("Expected reason to be present")
+    }
+  })
 
-  if !strings.Contains(logs, "Job Started id=1 image=testimage") {
-    t.Error("Expected Job started log to be present")
-  }
-
-  if !strings.Contains(logs, "Job Failed id=1 image=testimage") {
-    t.Error("Expected Job Failed log to be present")
-  }
-
-  if !strings.Contains(logs, "no such file or directory") {
-    t.Error("Expected reason to be present")
-  }
 }
