@@ -8,6 +8,7 @@ import (
 	"net/http/httptest"
 	"net/textproto"
 	"os"
+	"sync"
 	"testing"
 	"time"
 
@@ -51,9 +52,11 @@ func sendRequest(imgPath, mimeType string, c chan image.Job) *http.Response {
 
 func TestRescaling(t *testing.T) {
   outputPath := "/tmp/smgtest/"
+  wg := sync.WaitGroup{}
   c := make(chan image.Job)
-  go worker.InitWorkers(1, outputPath, c)
   defer close(c)
+
+  go worker.InitWorkers(1, outputPath, &wg, c)
 
   t.Run("Successful Rescaling", func(t *testing.T) {
     imgPath := "../testdata/testimage_small.jpg"

@@ -7,21 +7,24 @@ import (
 )
 
 type ImageServer struct {
+  Server *http.Server
   basePath string
   c chan <- image.Job
 }
 
-func NewImageServer(basePath string, c chan <- image.Job) *ImageServer {
-  return &ImageServer{basePath, c}
+func NewImageServer(port string, basePath string, c chan <- image.Job) *ImageServer {
+  Server := &http.Server{Addr: port}
+
+  return &ImageServer{Server, basePath, c}
 }
 
-func (is *ImageServer) Run(port string) error {
+func (is *ImageServer) Run() error {
   imageHandler := image.NewImageHandler(image.MaxImageSize, is.c)
 
   http.HandleFunc("/health", health)
   http.HandleFunc("/upload", imageHandler.Rescale)
 
-  err := http.ListenAndServe(port, nil)
+  err := is.Server.ListenAndServe()
   return err
 }
 

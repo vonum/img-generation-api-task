@@ -6,6 +6,7 @@ import (
 	"log/slog"
 	"os"
 	"path/filepath"
+	"sync"
 	"time"
 
 	"github.com/tutti-ch/backend-coding-task-template/image"
@@ -14,22 +15,25 @@ import (
 type Worker struct {
   id int
   basePath string
+  wg *sync.WaitGroup
   c <- chan image.Job
 }
 
-func NewWorker(id int, basePath string, c <- chan image.Job) *Worker {
-  return &Worker{id, basePath, c}
+func NewWorker(id int, basePath string, wg *sync.WaitGroup, c <- chan image.Job) *Worker {
+  return &Worker{id, basePath, wg, c}
 }
 
-func InitWorkers(n int, basePath string, c <- chan image.Job) {
+func InitWorkers(n int, basePath string, wg *sync.WaitGroup, c <- chan image.Job) {
   for i := 0; i < n; i++ {
     fmt.Println("Starting worker: ", i + 1)
-    worker := NewWorker(i + 1, basePath, c)
+    worker := NewWorker(i + 1, basePath, wg, c)
     go worker.Run()
   }
 }
 
 func (w *Worker) Run() {
+  w.wg.Add(1)
+
   for job := range w.c {
     startTime := time.Now()
     ctx := context.Background()
@@ -52,6 +56,8 @@ func (w *Worker) Run() {
     dur := endTime.Sub(startTime).Milliseconds()
     w.LogJobFinished(job.Id, len(job.Payload), len(rescaledBytes), dur, filename)
   }
+
+  w.wg.Done()
 }
 
 func (w *Worker) LogJobStarted(jobId string, nBytes int) {

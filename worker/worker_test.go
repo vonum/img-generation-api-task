@@ -6,8 +6,8 @@ import (
 	"os"
 	"runtime"
 	"strings"
+	"sync"
 	"testing"
-	"time"
 
 	"github.com/tutti-ch/backend-coding-task-template/image"
 	"github.com/tutti-ch/backend-coding-task-template/worker"
@@ -16,14 +16,15 @@ import (
 func runWorker(imgBytes []byte, outputPath string, buf bytes.Buffer) string {
   log.SetOutput(&buf)
 
+  wg := sync.WaitGroup{}
   c := make(chan image.Job)
-  defer close(c)
 
-  w := worker.NewWorker(1, outputPath, c)
+  w := worker.NewWorker(1, outputPath, &wg, c)
   go w.Run()
 
   c <- image.Job{Id: "testimage", Payload: imgBytes}
-  <- time.After(10 * time.Millisecond)
+  close(c)
+  wg.Wait()
 
   return buf.String()
 }
@@ -31,7 +32,11 @@ func runWorker(imgBytes []byte, outputPath string, buf bytes.Buffer) string {
 func TestInitWorkers(t *testing.T) {
   nStart := runtime.NumGoroutine()
 
-  worker.InitWorkers(3, "", make(<-chan image.Job))
+  wg := sync.WaitGroup{}
+  c := make(chan image.Job)
+  defer close(c)
+
+  worker.InitWorkers(3, "", &wg, c)
 
   n := runtime.NumGoroutine()
 

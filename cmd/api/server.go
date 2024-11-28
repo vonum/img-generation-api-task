@@ -1,14 +1,15 @@
 package main
 
 import (
-	"fmt"
+	"log"
 	"os"
 	"runtime"
 	"strconv"
 
+	"sync"
+
 	"github.com/tutti-ch/backend-coding-task-template/api"
 	"github.com/tutti-ch/backend-coding-task-template/image"
-	"github.com/tutti-ch/backend-coding-task-template/worker"
 )
 
 const BasePathEnv = "BASE_PATH"
@@ -26,15 +27,13 @@ func main() {
     nJobs, _ = strconv.Atoi(nj)
   }
 
+  sigChan := make(chan os.Signal, 1)
+  wg := sync.WaitGroup{}
   c := make(chan image.Job)
 
-  fmt.Println(basePath)
-  fmt.Println(nJobs)
+  api.RunServiceAndWorkers(basePath, nJobs, &wg, c, sigChan)
 
-  worker.InitWorkers(nJobs, basePath, c)
-
-  server := api.NewImageServer(basePath, c)
-  server.Run(":3000")
-
-  fmt.Println(basePath)
+  log.Println("Waiting for workers to finish processing.")
+  wg.Wait()
+  log.Println("Graceful shutdown complete.")
 }
