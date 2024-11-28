@@ -21,11 +21,8 @@ func ReadBytes(w http.ResponseWriter, r *http.Request, maxBytes int64) ([]byte, 
     }
   }
 
-  // this would allow unset mime type to be rescalled
-  // clients set these headers, so the other option
-  // is too check bytes manually for validity
   mimeType, ok := header.Header["Content-Type"]
-  if ok && mimeType[0] != JPEGMimeType {
+  if !ok || mimeType[0] != JPEGMimeType {
     return nil, &ImageMimeTypeError{}
   }
 

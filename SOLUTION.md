@@ -39,11 +39,13 @@ the server, and also close the channel for the workers. Workers are waited to
 finish their jobs, and the main go routine exits.
 
 ### Additional improvements
-1. Testing can be refactored and cleaned
+1. Server should parametrized with port number
+2. Request context could be passed to the workers for easier monitoring
+3. Testing can be refactored and cleaned
     * Some errors are not handled like reading an image to test
     * All of the application specific errors are handled
     * Most of the application is tested
-2. Naming can be better in some places
+4. Naming can be better in some places
 
 ## Setup
 1. `git clone git@github.com:tutti-ch/backend-coding-task-2024-11-milan-keca.git`
