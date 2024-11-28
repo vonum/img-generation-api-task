@@ -3,7 +3,6 @@ package api
 import (
 	"context"
 	"errors"
-	"fmt"
 	"log"
 	"net/http"
 	"os"
@@ -36,8 +35,7 @@ func RunServiceAndWorkers(
   }()
 
   signal.Notify(sigChan, syscall.SIGINT, syscall.SIGTERM)
-  v := <- sigChan
-  fmt.Println("\n", v)
+  <- sigChan
 
   shutdownCtx, cancel := context.WithTimeout(
     context.Background(),

@@ -48,7 +48,6 @@ func TestInitWorkers(t *testing.T) {
 
 func TestRun(t *testing.T) {
   imgId := "testimage"
-
   imgPath := "../testdata/testimage_small.jpg"
   imgBytes, err := os.ReadFile(imgPath)
 

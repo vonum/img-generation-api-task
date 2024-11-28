@@ -50,8 +50,11 @@ func sendRequest(imgPath, mimeType string, c chan image.Job) *http.Response {
   return w.Result()
 }
 
+// Improvement would be to use a separate dir
+// And separate workers in each test run
+// No flakyness is introduced
 func TestRescaling(t *testing.T) {
-  outputPath := "/tmp/smgtest/"
+  outputPath := t.TempDir()
   wg := sync.WaitGroup{}
   c := make(chan image.Job)
   defer close(c)
@@ -68,7 +71,11 @@ func TestRescaling(t *testing.T) {
     json.NewDecoder(res.Body).Decode(&response)
 
     if res.StatusCode != 200 {
-      t.Errorf("Expected response with status code %d, but got %d.", 200, res.StatusCode)
+      t.Errorf(
+        "Expected response with status code %d, but got %d.",
+        200,
+        res.StatusCode,
+      )
     }
 
     if err := uuid.Validate(response.ImageID); err != nil {
@@ -87,11 +94,19 @@ func TestRescaling(t *testing.T) {
     json.NewDecoder(res.Body).Decode(&response)
 
     if res.StatusCode != 413 {
-      t.Errorf("Expected response with status code %d, but got %d.", 413, res.StatusCode)
+      t.Errorf(
+        "Expected response with status code %d, but got %d.",
+        413,
+        res.StatusCode,
+      )
     }
 
     if response.Error != errMsg {
-      t.Errorf("Expected error message %s but got %s.", errMsg, response.Error)
+      t.Errorf(
+        "Expected error message %s but got %s.",
+        errMsg,
+        response.Error,
+      )
     }
   })
 
@@ -106,11 +121,19 @@ func TestRescaling(t *testing.T) {
     json.NewDecoder(res.Body).Decode(&response)
 
     if res.StatusCode != 400 {
-      t.Errorf("Expected response with status code %d, but got %d.", 400, res.StatusCode)
+      t.Errorf(
+        "Expected response with status code %d, but got %d.",
+        400,
+        res.StatusCode,
+      )
     }
 
     if response.Error != errMsg {
-      t.Errorf("Expected error message %s but got %s.", errMsg, response.Error)
+      t.Errorf(
+        "Expected error message %s but got %s.",
+        errMsg,
+        response.Error,
+      )
     }
   })
 
@@ -130,15 +153,26 @@ func TestRescaling(t *testing.T) {
     json.NewDecoder(res.Body).Decode(&response)
 
     if res.StatusCode != 429 {
-      t.Errorf("Expected response with status code %d, but got %d.", 429, res.StatusCode)
+      t.Errorf(
+        "Expected response with status code %d, but got %d.",
+        429,
+        res.StatusCode,
+      )
     }
 
     if response.Error != errMsg {
-      t.Errorf("Expected error message %s but got %s.", errMsg, response.Error)
+      t.Errorf(
+        "Expected error message %s but got %s.",
+        errMsg,
+        response.Error,
+      )
     }
 
     if endTime.Milliseconds() < 100 {
-      t.Error("Expected timeout to be after 100 milliseconds.")
+      t.Errorf(
+        "Expected timeout to be after 100 milliseconds, but got %d.",
+        endTime.Milliseconds(),
+      )
     }
   })
 }
