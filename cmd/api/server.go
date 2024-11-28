@@ -19,7 +19,11 @@ func main() {
   nJobs := runtime.NumCPU()
   basePath, ok := os.LookupEnv(BasePathEnv)
   if !ok {
-    panic("Base path not set, export BASE_PATH env var.")
+    log.Fatal("Base path not set, export BASE_PATH env var.")
+  }
+
+  if _, err := os.Stat(basePath); err != nil {
+    log.Fatalf("%s does not exist.", basePath)
   }
 
   nj, ok := os.LookupEnv(NJobsEnv)
