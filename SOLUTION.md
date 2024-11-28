@@ -101,6 +101,7 @@ Requirements:
 2. `minikube image load tuti:latest`
     * Load image to minikube's registry
     * Image pull policy is set to Never
+    * to validate the image is loaded, run `minikube image ls`
 3. `minikube start`
 4. `kubectl apply -f manifests/`
 
