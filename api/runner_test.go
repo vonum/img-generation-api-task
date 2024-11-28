@@ -31,7 +31,7 @@ func TestRunServiceAndWorkers(t *testing.T) {
   wg := sync.WaitGroup{}
 
   var imgIds []string
-  for i := 0; i < 100; i++ {
+  for i := 0; i < 10000; i++ {
     imgIds = append(imgIds, fmt.Sprintf("shutdowntest%d", i))
   }
 

@@ -5,7 +5,6 @@ import (
 	"os"
 	"runtime"
 	"strconv"
-
 	"sync"
 
 	"github.com/tutti-ch/backend-coding-task-template/api"
@@ -13,10 +12,10 @@ import (
 )
 
 const BasePathEnv = "BASE_PATH"
-const NJobsEnv = "N_JOBS"
+const NWorkersEnv = "N_WORKERS"
 
 func main() {
-  nJobs := runtime.NumCPU()
+  nWorkers := runtime.NumCPU()
   basePath, ok := os.LookupEnv(BasePathEnv)
   if !ok {
     log.Fatal("Base path not set, export BASE_PATH env var.")
@@ -26,16 +25,16 @@ func main() {
     log.Fatalf("%s does not exist.", basePath)
   }
 
-  nj, ok := os.LookupEnv(NJobsEnv)
+  nw, ok := os.LookupEnv(NWorkersEnv)
   if ok {
-    nJobs, _ = strconv.Atoi(nj)
+    nWorkers, _ = strconv.Atoi(nw)
   }
 
   sigChan := make(chan os.Signal, 1)
   wg := sync.WaitGroup{}
   c := make(chan image.Job)
 
-  api.RunServiceAndWorkers(basePath, nJobs, &wg, c, sigChan)
+  api.RunServiceAndWorkers(basePath, nWorkers, &wg, c, sigChan)
 
   log.Println("Waiting for workers to finish processing.")
   wg.Wait()
