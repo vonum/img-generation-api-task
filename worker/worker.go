@@ -2,7 +2,6 @@ package worker
 
 import (
 	"context"
-	"fmt"
 	"log/slog"
 	"os"
 	"path/filepath"
@@ -25,7 +24,6 @@ func NewWorker(id int, basePath string, wg *sync.WaitGroup, c <- chan image.Job)
 
 func InitWorkers(n int, basePath string, wg *sync.WaitGroup, c <- chan image.Job) {
   for i := 0; i < n; i++ {
-    fmt.Println("Starting worker: ", i + 1)
     worker := NewWorker(i + 1, basePath, wg, c)
     go worker.Run()
   }
@@ -33,6 +31,7 @@ func InitWorkers(n int, basePath string, wg *sync.WaitGroup, c <- chan image.Job
 
 func (w *Worker) Run() {
   w.wg.Add(1)
+  w.LogWorkerStarted()
 
   for job := range w.c {
     startTime := time.Now()
@@ -58,6 +57,11 @@ func (w *Worker) Run() {
   }
 
   w.wg.Done()
+}
+
+
+func (w *Worker) LogWorkerStarted() {
+  slog.Info("Worker Started", "id", w.id)
 }
 
 func (w *Worker) LogJobStarted(jobId string, nBytes int) {

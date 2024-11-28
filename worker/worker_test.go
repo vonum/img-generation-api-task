@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"log"
 	"os"
+	"path/filepath"
 	"runtime"
 	"strings"
 	"sync"
@@ -13,7 +14,7 @@ import (
 	"github.com/tutti-ch/backend-coding-task-template/worker"
 )
 
-func runWorker(imgBytes []byte, outputPath string, buf bytes.Buffer) string {
+func runWorker(imgId string, imgBytes []byte, outputPath string, buf bytes.Buffer) string {
   log.SetOutput(&buf)
 
   wg := sync.WaitGroup{}
@@ -22,7 +23,7 @@ func runWorker(imgBytes []byte, outputPath string, buf bytes.Buffer) string {
   w := worker.NewWorker(1, outputPath, &wg, c)
   go w.Run()
 
-  c <- image.Job{Id: "testimage", Payload: imgBytes}
+  c <- image.Job{Id: imgId, Payload: imgBytes}
   close(c)
   wg.Wait()
 
@@ -46,7 +47,8 @@ func TestInitWorkers(t *testing.T) {
 }
 
 func TestRun(t *testing.T) {
-  outputPath := "/tmp/smgtest/"
+  imgId := "testimage"
+
   imgPath := "../testdata/testimage_small.jpg"
   imgBytes, err := os.ReadFile(imgPath)
 
@@ -55,12 +57,15 @@ func TestRun(t *testing.T) {
   }
 
   t.Run("Successful Run", func(t *testing.T) {
+    outputPath:= t.TempDir()
+    outputImagePath := filepath.Join(outputPath, imgId + ".jpeg")
+
     var buf bytes.Buffer
     log.SetOutput(&buf)
 
-    logs := runWorker(imgBytes, outputPath, buf)
+    logs := runWorker(imgId, imgBytes, outputPath, buf)
 
-    resultBytes, err := os.ReadFile("/tmp/smgtest/testimage.jpeg")
+    resultBytes, err := os.ReadFile(outputImagePath)
     if err != nil || len(resultBytes) == 0 {
       t.Error("Expected rescaled image to be generated: ", err)
     }
@@ -73,21 +78,30 @@ func TestRun(t *testing.T) {
       t.Error("Expected Job finished log to be present")
     }
 
-    if !strings.Contains(logs, "image_path=/tmp/smgtest/testimage.jpeg") {
+    if !strings.Contains(logs, "image_path=" + outputImagePath) {
       t.Error("Expected output path to be present")
     }
   })
 
   // There are more potential causes for rescaling to fail
-  // This covers only the empty byte slice case
+  // This covers worker behaviour when rescaling returns an error
+  // By the empty byte slice case
   // Rescaling is tested separately
   t.Run("Failed Rescaling", func(t *testing.T) {
+    outputPath:= t.TempDir()
+    outputImagePath := filepath.Join(outputPath, imgId + ".jpeg")
+
     var buf bytes.Buffer
     log.SetOutput(&buf)
 
     imgBytes := []byte{}
 
-    logs := runWorker(imgBytes, outputPath, buf)
+    logs := runWorker(imgId, imgBytes, outputPath, buf)
+
+    _, err := os.ReadFile(outputImagePath)
+    if err == nil {
+      t.Error("Expected image to not be generated")
+    }
 
     if !strings.Contains(logs, "Job Started id=1 image=testimage") {
       t.Error("Expected Job started log to be present")
@@ -103,10 +117,18 @@ func TestRun(t *testing.T) {
   })
 
   t.Run("Missing Directory", func(t *testing.T) {
+    outputPath:= t.TempDir()
+    outputImagePath := filepath.Join(outputPath, imgId + ".jpeg")
+
     var buf bytes.Buffer
     log.SetOutput(&buf)
 
-    logs := runWorker(imgBytes, "/tmp/smgtestmissing/", buf)
+    logs := runWorker(imgId, imgBytes, "/tmp/smgtestmissing/", buf)
+
+    _, err := os.ReadFile(outputImagePath)
+    if err == nil {
+      t.Error("Expected image to not be generated")
+    }
 
     if !strings.Contains(logs, "Job Started id=1 image=testimage") {
       t.Error("Expected Job started log to be present")
@@ -120,5 +142,4 @@ func TestRun(t *testing.T) {
       t.Error("Expected reason to be present")
     }
   })
-
 }
